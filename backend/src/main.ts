@@ -10,6 +10,8 @@ async function bootstrap() {
   const io = new Server(app.getHttpServer(), {
     cors: { origin: 'http://localhost:3001', credentials: true },
   });
+
+  // Make Socket.IO server available to TasksService
   app.get(TasksService).socket = io;
 
   await app.listen(3000);

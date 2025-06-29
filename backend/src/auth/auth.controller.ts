@@ -1,7 +1,7 @@
-import { Controller, Get, Request, UseGuards, BadRequestException } from '@nestjs/common';
+import { Controller, Get, Request, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from './auth.service';
-import { User } from '../users/entities/user.entity';
+import { Request as ExpressRequest } from 'express'; // Alias to avoid conflicts
 
 @Controller('auth')
 export class AuthController {
@@ -9,16 +9,13 @@ export class AuthController {
 
   @Get('google')
   @UseGuards(AuthGuard('google'))
-  async googleAuth(@Request() req) {
+  async googleAuth(@Request() req: ExpressRequest): Promise<void> {
     // Initiates Google OAuth flow; no response needed
   }
 
   @Get('google/callback')
   @UseGuards(AuthGuard('google'))
-  async googleAuthRedirect(@Request() req) {
-    if (!req.user) {
-      throw new BadRequestException('User not authenticated');
-    }
-    return this.authService.login(req.user);
+  async googleAuthRedirect(@Request() req: ExpressRequest): Promise<any> {
+    return this.authService.googleLogin(req);
   }
 }

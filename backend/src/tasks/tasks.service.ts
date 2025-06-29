@@ -44,10 +44,15 @@ export class TasksService {
     const task = await this.tasksRepository.findOne({
       where: { id, user: { id: user.id } },
     });
-    if (!task) {
+    const sharedTask = await this.taskShareRepository.findOne({
+      where: { task: { id }, sharedWith: { id: user.id } },
+      relations: ['task'],
+    });
+    console.log(`findOne(id: ${id}, user: ${user.id}): task=${!!task}, sharedTask=${!!sharedTask}, sharedTask.task=${!!sharedTask?.task}`);
+    if (!task && (!sharedTask || !sharedTask.task)) {
       throw new NotFoundException(`Task with ID ${id} not found`);
     }
-    return task;
+    return task ?? (sharedTask?.task || null);
   }
 
   async update(id: number, updateTaskDto: UpdateTaskDto, user: User): Promise<Task> {

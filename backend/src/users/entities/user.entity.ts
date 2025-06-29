@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column, OneToMany } from 'typeorm';
 import { Task } from '../../tasks/entities/task.entity';
+import { TaskShare } from '../../tasks/entities/task-share.entity';
 
 @Entity()
 export class User {
@@ -10,14 +11,14 @@ export class User {
   email: string;
 
   @Column()
-  name: string;
-
-  @Column({ unique: true })
   googleId: string;
 
-  @Column({ default: true })
-  isActive: boolean;
-
-  @OneToMany(() => Task, task => task.user)
+  @OneToMany(() => Task, (task) => task.user)
   tasks: Task[];
+
+  @OneToMany(() => TaskShare, (taskShare) => taskShare.sharedWith)
+  sharedTasks: TaskShare[];
+
+  @OneToMany(() => TaskShare, (taskShare) => taskShare.owner)
+  ownedShares: TaskShare[];
 }

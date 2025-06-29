@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, ManyToOne } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { Task } from './task.entity';
 import { User } from '../../users/entities/user.entity';
 
@@ -7,12 +7,12 @@ export class TaskShare {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @ManyToOne(() => Task, task => task.id)
+  @ManyToOne(() => Task, (task) => task.taskShares)
   task: Task;
 
-  @ManyToOne(() => User, user => user.id)
+  @ManyToOne(() => User, (user) => user.sharedTasks)
   sharedWith: User;
 
-  @ManyToOne(() => User, user => user.id)
+  @ManyToOne(() => User, (user) => user.ownedShares)
   owner: User;
 }
