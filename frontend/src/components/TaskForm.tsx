@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Task } from '../types/task.types';
+import { type Task } from '../types/task.types';
 import { toast } from 'react-toastify';
 
 interface TaskFormProps {

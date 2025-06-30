@@ -1,15 +1,15 @@
 import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import axios from 'axios';
-import { toast } from 'react-toastify';
 import TaskList from '../components/TaskList';
 import TaskForm from '../components/TaskForm';
 import FilterBar from '../components/FilterBar';
 import ShareTaskModal from '../components/ShareTaskModal';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { useTasks } from '../hooks/useTasks';
+
 import { useWebSocket } from '../hooks/useWebSocket';
-import { Task } from '../types/task.types';
+import type { Task } from '../types/task.types';
 
 const Dashboard: React.FC = () => {
   const { tasks, refetch } = useTasks();
@@ -76,7 +76,7 @@ const Dashboard: React.FC = () => {
       </ErrorBoundary>
       {showForm && (
         <TaskForm
-          task={editingTask}
+          task={editingTask ?? undefined} // Fixing the type issue by providing undefined if editingTask is null
           onSave={async (task) => {
             if (editingTask) {
               await updateMutation.mutate(task);
