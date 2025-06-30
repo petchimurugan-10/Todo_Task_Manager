@@ -9,10 +9,13 @@ export class TaskShare {
   taskId: string;
 
   @Prop({ type: String, ref: 'User', required: true })
-  sharedWithUserId: string;
+  userId: string;
 
-  @Prop({ required: true, enum: ['read', 'write'] })
-  permission: string;
+  @Prop({ required: true })
+  permission: string; // 'read' | 'write' | 'admin'
+
+  @Prop({ default: Date.now })
+  sharedAt: Date;
 }
 
 export const TaskShareSchema = SchemaFactory.createForClass(TaskShare);

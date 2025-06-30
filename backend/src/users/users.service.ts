@@ -1,38 +1,38 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { User } from './entities/user.entity';
-import { Repository } from 'typeorm'; // Added import for Repository
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User, UserDocument } from './entities/user.entity';
 
-
-export class UsersServiceDuplicate { // Changed class name to avoid duplicate identifier
-  constructor(private readonly userRepository: Repository<User>) {} // Changed UserRepository to Repository<User>
-}
 @Injectable()
 export class UsersService {
   constructor(
-    @InjectRepository(User)
-    private usersRepository: Repository<User>,
+    @InjectModel(User.name)
+    private userModel: Model<UserDocument>,
   ) {}
 
   async findByEmail(email: string): Promise<User | undefined> {
-    const user = await this.usersRepository.findOne({ where: { email } });
-    return user ?? undefined; // Ensure it returns undefined instead of null
+    const user = await this.userModel.findOne({ email }).exec();
+    return user ?? undefined;
   }
 
   async findOneByGoogleId(googleId: string): Promise<User | undefined> {
-    const user = await this.usersRepository.findOne({ where: { googleId } });
-    return user ?? undefined; // Ensure it returns undefined instead of null
+    const user = await this.userModel.findOne({ googleId }).exec();
+    return user ?? undefined;
   }
 
-  async findOrCreate(userData: { googleId: string; email: string; name?: string }): Promise<User> {
+  async findOrCreate(userData: { 
+    googleId: string; 
+    email: string; 
+    name?: string 
+  }): Promise<User> {
     let user = await this.findByEmail(userData.email);
     if (!user) {
-      user = this.usersRepository.create({
+      const createdUser = new this.userModel({
         googleId: userData.googleId,
         email: userData.email,
         name: userData.name,
       });
-      user = await this.usersRepository.save(user);
+      user = await createdUser.save();
       if (!user) {
         throw new NotFoundException('Failed to create user');
       }
@@ -41,6 +41,14 @@ export class UsersService {
   }
 
   async findAll(): Promise<User[]> {
-    return this.usersRepository.find();
+    return this.userModel.find().exec();
+  }
+
+  async findOne(id: string): Promise<User> {
+    const user = await this.userModel.findById(id).exec();
+    if (!user) {
+      throw new NotFoundException(`User with id ${id} not found`);
+    }
+    return user;
   }
 }

@@ -1,9 +1,11 @@
 import { z } from 'zod';
 
-export const UpdateTaskDto = z.object({
-  title: z.string().min(1).optional(),
-  description: z.string().optional(),
-  status: z.enum(['To Do', 'In Progress', 'Completed']).optional(),
-  priority: z.enum(['Low', 'Medium', 'High']).optional(),
-  dueDate: z.string().optional(),
-});
+export class UpdateTaskDto {
+  title?: string;
+  description?: string;
+  status?: boolean;
+  priority?: string;
+  dueDate: string;
+  // You usually do NOT update userId for a task
+  // userId?: string; // Only include if you want to allow changing ownership
+}

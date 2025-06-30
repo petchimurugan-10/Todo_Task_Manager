@@ -5,6 +5,8 @@ import { AuthModule } from './auth/auth.module';
 import { TasksModule } from './tasks/tasks.module';
 import { UsersModule } from './users/users.module';
 import * as Joi from 'joi';
+import { UsersService } from './users/users.service';
+import { User, UserSchema } from './users/entities/user.entity';
 
 @Module({
   imports: [

@@ -38,7 +38,7 @@ export class TasksController {
   @UseGuards(AuthGuard('jwt'))
   async delete(@Param('id') id: string, @Req() req: Request) {
     const userEmail = req.user?.email || ''; // Handle possible undefined
-    return this.tasksService.delete(id, userEmail);
+    return this.tasksService.remove(id, userEmail);
   }
 
   @Post(':id/share')
