@@ -1,15 +1,26 @@
-import { Strategy, StrategyOptionsWithRequest } from 'passport-google-oauth20';
+import { Strategy } from 'passport-google-oauth20';
+import { PassportStrategy } from '@nestjs/passport';
+import { Injectable } from '@nestjs/common';
+import { AuthService } from '../auth.service';
+import { ConfigService } from '@nestjs/config';
 
-export class GoogleStrategy extends Strategy {
-  constructor() {
+@Injectable()
+export class GoogleStrategy extends PassportStrategy(Strategy) {
+  constructor(
+    private authService: AuthService,
+    configService: ConfigService,
+  ) {
     super({
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.GOOGLE_CALLBACK_URL,
+      clientID: configService.get<string>('GOOGLE_CLIENT_ID')!, // Non-null assertion
+      clientSecret: configService.get<string>('GOOGLE_CLIENT_SECRET')!, // Non-null assertion
+      callbackURL: 'http://localhost:3000/auth/google/callback',
       scope: ['email', 'profile'],
-      passReqToCallback: true, 
-    } as StrategyOptionsWithRequest, (req, accessToken, refreshToken, profile, done) => {
-      done(null, profile);
+      passReqToCallback: true,
     });
+  }
+
+  async validate(request: any, accessToken: string, refreshToken: string, profile: any) {
+    const user = await this.authService.validateUser(profile.emails[0].value, profile.id);
+    return user;
   }
 }

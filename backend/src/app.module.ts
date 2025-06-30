@@ -1,35 +1,35 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { TasksModule } from './tasks/tasks.module';
 import { UsersModule } from './users/users.module';
-import { Task } from './tasks/entities/task.entity';
-import { TaskShare } from './tasks/entities/task-share.entity';
-import { User } from './users/entities/user.entity';
+import * as Joi from 'joi';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
-      validationSchema: {
-        DATABASE_URL: { required: true, type: 'string' },
-        JWT_SECRET: { required: true, type: 'string' },
-        GOOGLE_CLIENT_ID: { required: true, type: 'string' },
-        GOOGLE_CLIENT_SECRET: { required: true, type: 'string' },
-      },
+      validationSchema: Joi.object({
+        MONGODB_URI: Joi.string().required(),
+        JWT_SECRET: Joi.string().required(),
+        GOOGLE_CLIENT_ID: Joi.string().required(),
+        GOOGLE_CLIENT_SECRET: Joi.string().required(),
+      }),
     }),
-    TypeOrmModule.forRoot({
-      type: 'postgres',
-      url: process.env.DATABASE_URL,
-      autoLoadEntities: true,
-      synchronize: true, // Creates tables automatically
-      entities: [Task, TaskShare, User], // Explicitly load entities
+    MongooseModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.get<string>('MONGODB_URI', 'mongodb://localhost:27017/todo'),
+      }),
+      inject: [ConfigService],
     }),
     AuthModule,
     TasksModule,
     UsersModule,
   ],
+  providers: [],
+  exports: [],
 })
 export class AppModule {}

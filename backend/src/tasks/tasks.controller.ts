@@ -1,55 +1,60 @@
-import { Controller, Get, Post, Body, Delete, Param, Req, UseGuards, BadRequestException,Put } from '@nestjs/common';
-import { Request } from 'express'; // Use Request from express for type definitions
+import { Controller, Post, Body, Get, Param, Put, Delete, UseGuards, Req } from '@nestjs/common';
 import { TasksService } from './tasks.service';
-import { CreateTaskDto, UpdateTaskDto } from './dtos';
 import { AuthGuard } from '@nestjs/passport';
+import { Request } from 'express';
 
-@Controller('tasks')
-@UseGuards(AuthGuard('jwt'))
+@Controller('api/tasks')
 export class TasksController {
   constructor(private readonly tasksService: TasksService) {}
 
   @Post()
-  async create(@Body() createTaskDto: CreateTaskDto, @Req() req: Request): Promise<any> {
-    if (!req.user) throw new BadRequestException('User not authenticated');
-    return this.tasksService.create(createTaskDto, req.user);
+  @UseGuards(AuthGuard('jwt'))
+  async create(@Body() createTaskDto: any, @Req() req: Request) {
+    const userEmail = req.user ? req.user['email'] : ''; // Handle possible undefined
+    return this.tasksService.create(createTaskDto, userEmail); // Assuming email is the userId
   }
 
   @Get()
-  async findAll(@Req() req: Request): Promise<any[]> {
-    if (!req.user) throw new BadRequestException('User not authenticated');
-    return this.tasksService.findAll(req.user);
+  @UseGuards(AuthGuard('jwt'))
+  async findAll(@Req() req: Request) {
+    const userEmail = req.user ? req.user['email'] : ''; // Handle possible undefined
+    return this.tasksService.findAll(userEmail);
   }
 
   @Get(':id')
-  async findOne(@Param('id') id: string, @Req() req: Request): Promise<any> {
-    if (!req.user) throw new BadRequestException('User not authenticated');
-    return this.tasksService.findOne(Number(id), req.user); // Ensure id is converted to number
+  @UseGuards(AuthGuard('jwt'))
+  async findOne(@Param('id') id: string, @Req() req: Request) {
+    return this.tasksService.findOne(id);
   }
 
   @Put(':id')
-  async update(
-    @Param('id') id: string,
-    @Body() updateTaskDto: UpdateTaskDto,
-    @Req() req: Request,
-  ): Promise<any> {
-    if (!req.user) throw new BadRequestException('User not authenticated');
-    return this.tasksService.update(Number(id), updateTaskDto, req.user);
+  @UseGuards(AuthGuard('jwt'))
+  async update(@Param('id') id: string, @Body() updateTaskDto: any, @Req() req: Request) {
+    const userEmail = req.user?.email || ''; // Handle possible undefined
+    return this.tasksService.update(id, updateTaskDto, userEmail);
   }
 
   @Delete(':id')
-  async delete(@Param('id') id: string, @Req() req: Request): Promise<void> {
-    if (!req.user) throw new BadRequestException('User not authenticated');
-    return this.tasksService.delete(Number(id), req.user);
+  @UseGuards(AuthGuard('jwt'))
+  async delete(@Param('id') id: string, @Req() req: Request) {
+    const userEmail = req.user?.email || ''; // Handle possible undefined
+    return this.tasksService.delete(id, userEmail);
   }
 
   @Post(':id/share')
-  async share(
-    @Param('id') id: string,
-    @Body() body: { email: string },
-    @Req() req: Request,
-  ): Promise<void> {
-    if (!req.user) throw new BadRequestException('User not authenticated');
-    return this.tasksService.share(Number(id), body.email, req.user);
+  @UseGuards(AuthGuard('jwt'))
+  async share(@Param('id') id: string, @Body() body: { email: string }, @Req() req: Request) {
+    const userEmail = req.user?.email || ''; // Handle possible undefined
+    return this.tasksService.shareTask(id, body.email, 'read', userEmail); // Default to 'read' permission
+  }
+
+  @Get('shared')
+  @UseGuards(AuthGuard('jwt'))
+  async getSharedTasks(@Req() req: Request) {
+    const userEmail = req.user?.email; // Handle possible undefined
+    if (!userEmail) {
+      throw new Error('User email is not defined'); // Handle the case when userEmail is undefined
+    }
+    return this.tasksService.getSharedTasks(userEmail);
   }
 }

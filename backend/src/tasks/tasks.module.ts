@@ -1,14 +1,25 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { TasksService } from './tasks.service';
 import { TasksController } from './tasks.controller';
-import { Task } from './entities/task.entity';
-import { TaskShare } from './entities/task-share.entity';
-import { UsersModule } from '../users/users.module';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Task, TaskSchema } from './entities/task.entity';
+import { TaskShare, TaskShareSchema } from './entities/task-share.entity';
+import { Server } from 'socket.io';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Task, TaskShare]), UsersModule],
+  imports: [
+    MongooseModule.forFeature([
+      { name: Task.name, schema: TaskSchema },
+      { name: TaskShare.name, schema: TaskShareSchema },
+    ]),
+  ],
+  providers: [
+    TasksService,
+    {
+      provide: 'SOCKET_IO_SERVER',
+      useValue: new Server(),
+    },
+  ],
   controllers: [TasksController],
-  providers: [TasksService],
 })
 export class TasksModule {}

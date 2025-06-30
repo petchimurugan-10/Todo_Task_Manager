@@ -1,93 +1,59 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-import { Task } from './entities/task.entity';
-import { TaskShare } from './entities/task-share.entity';
-import { User } from '../users/entities/user.entity';
-import { UsersService } from '../users/users.service';
-import { CreateTaskDto, UpdateTaskDto, CreateTaskSchema } from './dtos';
-import { z } from 'zod';
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { Task, TaskDocument } from './entities/task.entity';
+import { TaskShare, TaskShareDocument } from './entities/task-share.entity';
 import { Server } from 'socket.io';
-
+import { Inject } from '@nestjs/common/';
 @Injectable()
 export class TasksService {
   constructor(
-    @InjectRepository(Task)
-    private tasksRepository: Repository<Task>,
-    @InjectRepository(TaskShare)
-    private taskShareRepository: Repository<TaskShare>,
-    private usersService: UsersService,
-    public socket: Server,
+    @InjectModel(Task.name) private taskModel: Model<TaskDocument>,
+    @InjectModel(TaskShare.name) private taskShareModel: Model<TaskShareDocument>,
+    @Inject('SOCKET_IO_SERVER') public socket: Server,
   ) {}
 
-  async create(createTaskDto: CreateTaskDto, user: User): Promise<Task> {
-    const validatedData = CreateTaskSchema.parse(createTaskDto);
-    const task = this.tasksRepository.create({
-      ...validatedData,
-      user,
-    });
-    const savedTask = await this.tasksRepository.save(task);
-    this.socket.emit('taskUpdate', { taskId: savedTask.id, userId: user.id });
+  async create(createTaskDto: any, userId: string): Promise<Task> {
+    const task = new this.taskModel({ ...createTaskDto, userId });
+    const savedTask = await task.save();
+    this.socket.emit('taskUpdate', { taskId: savedTask._id, userId });
     return savedTask;
   }
 
-  async findAll(user: User): Promise<Task[]> {
-    const ownedTasks = await this.tasksRepository.find({ where: { user: { id: user.id } } });
-    const sharedTasks = await this.taskShareRepository.find({
-      where: { sharedWith: { id: user.id } },
-      relations: ['task'],
-    });
-    return [...ownedTasks, ...sharedTasks.map(share => share.task)];
+  async findAll(userId: string): Promise<Task[]> {
+    return this.taskModel.find({ userId }).populate('userId', 'name email').exec();
   }
 
-  async findOne(id: number, user: User): Promise<Task> {
-    const task = await this.tasksRepository.findOne({
-      where: { id, user: { id: user.id } },
-    });
-    const sharedTask = await this.taskShareRepository.findOne({
-      where: { task: { id }, sharedWith: { id: user.id } },
-      relations: ['task'],
-    });
-    console.log(`findOne(id: ${id}, user: ${user.id}): task=${!!task}, sharedTask=${!!sharedTask}, sharedTask.task=${!!sharedTask?.task}`);
-    if (!task && (!sharedTask || !sharedTask.task)) {
-      throw new NotFoundException(`Task with ID ${id} not found`);
+  async findOne(id: string): Promise<Task> {
+    const task = await this.taskModel.findById(id).populate('userId', 'name email').exec();
+    if (!task) {
+      throw new Error('Task not found');
     }
-    return task ?? (sharedTask?.task || null);
+    return task;
   }
 
-  async update(id: number, updateTaskDto: UpdateTaskDto, user: User): Promise<Task> {
-    const task = await this.findOne(id, user);
-    Object.assign(task, updateTaskDto);
-    const updatedTask = await this.tasksRepository.save(task);
-    this.socket.emit('taskUpdate', { taskId: updatedTask.id, userId: user.id });
-    return updatedTask;
+  async update(id: string, updateTaskDto: any, userId: string): Promise<Task> {
+    const task = await this.taskModel.findOneAndUpdate({ _id: id, userId }, updateTaskDto, { new: true }).exec();
+    if (!task) {
+      throw new Error('Task not found or unauthorized'); // Handle the case where task is null
+    }
+    this.socket.emit('taskUpdate', { taskId: id, userId });
+    return task;
   }
 
-  async delete(id: number, user: User): Promise<void> {
-    const task = await this.findOne(id, user);
-    await this.tasksRepository.remove(task);
-    this.socket.emit('taskUpdate', { taskId: id, userId: user.id });
+  async delete(id: string, userId: string): Promise<void> {
+    await this.taskModel.findOneAndDelete({ _id: id, userId }).exec();
+    await this.taskShareModel.deleteMany({ taskId: id }).exec();
   }
 
-  async share(id: number, email: string, user: User): Promise<void> {
-    console.log(`Sharing task ${id} for user ${user.id} with email ${email}`);
-    const task = await this.findOne(id, user);
-    const sharedUser = await this.usersService.findByEmail(email);
-    console.log(`Shared user found: ${!!sharedUser}, email: ${email}`);
-    if (!sharedUser) throw new NotFoundException('User not found');
-    const taskShare = this.taskShareRepository.create({
-      task,
-      sharedWith: sharedUser,
-      owner: user,
-    });
-    await this.taskShareRepository.save(taskShare);
-    console.log(`TaskShare saved: taskId=${id}, sharedWithId=${sharedUser.id}`);
-    this.socket.emit('taskShared', {
-      taskId: id,
-      sharedWithId: sharedUser.id,
-      ownerId: user.id,
-      message: `Task "${task.title}" shared with ${sharedUser.email}`,
-    });
-    console.log(`Task ${id} shared with ${email}`);
+  async shareTask(taskId: string, sharedWithUserId: string, permission: string, userId: string): Promise<TaskShare> {
+    const task = await this.taskModel.findOne({ _id: taskId, userId }).exec();
+    if (!task) throw new Error('Task not found or unauthorized');
+    const taskShare = new this.taskShareModel({ taskId, sharedWithUserId, permission });
+    return taskShare.save();
+  }
+
+  async getSharedTasks(userId: string): Promise<TaskShare[]> {
+    return this.taskShareModel.find({ sharedWithUserId: userId }).populate('taskId', 'title status priority').exec();
   }
 }

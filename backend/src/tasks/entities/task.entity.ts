@@ -1,27 +1,21 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany } from 'typeorm';
-import { User } from '../../users/entities/user.entity';
-import { TaskShare } from './task-share.entity';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import { Document } from 'mongoose';
 
-@Entity()
+export type TaskDocument = Task & Document;
+
+@Schema()
 export class Task {
-  @PrimaryGeneratedColumn()
-  id: number;
-
-  @Column()
+  @Prop({ required: true })
   title: string;
 
-  @Column()
+  @Prop({ required: true })
   status: string;
 
-  @Column()
+  @Prop({ required: true })
   priority: string;
 
-  @Column({ type: 'timestamp', nullable: true })
-  dueDate: Date;
-
-  @ManyToOne(() => User, (user) => user.tasks)
-  user: User;
-
-  @OneToMany(() => TaskShare, (taskShare) => taskShare.task)
-  taskShares: TaskShare[];
+  @Prop({ type: String, ref: 'User' })
+  userId: string;
 }
+
+export const TaskSchema = SchemaFactory.createForClass(Task);

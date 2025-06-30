@@ -1,44 +1,34 @@
 import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User, UserDocument } from '../users/entities/user.entity';
 import { JwtService } from '@nestjs/jwt';
-import { UsersService } from '../users/users.service';
-import { User } from '../users/entities/user.entity';
-import { Request } from 'express';
-import { ParamsDictionary } from 'express-serve-static-core';
-import { ParsedQs } from 'qs';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
   constructor(
-    private usersService: UsersService,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwtService: JwtService,
+    private configService: ConfigService,
   ) {}
-  googleLogin(req: Request): any {
-    if (!req.user) {
-      return { message: 'No user from Google' };
+
+  async validateUser(email: string, googleId: string): Promise<any> {
+    let user = await this.userModel.findOne({ email }).exec();
+    if (!user) {
+      user = new this.userModel({ email, googleId, name: '' });
+      await user.save();
+    } else if (!user.googleId) {
+      user.googleId = googleId;
+      await user.save();
     }
-
-    const user = req.user; // Assuming `req.user` contains user info from Google
-    const payload = { email: user.email, sub: user.id };
-    const token = this.jwtService.sign(payload);
-
-    return {
-      message: 'User information from Google',
-      user,
-      token,
-    };
+    return user;
   }
-  async login(user: User): Promise<{ access_token: string }> {
-    const payload = { email: user.email, sub: user.id };
+
+  async login(user: any) {
+    const payload = { email: user.email, sub: user.googleId };
     return {
       access_token: this.jwtService.sign(payload),
     };
-  }
-
-  async validateGoogleUser(profile: any): Promise<User> {
-    let user = await this.usersService.findOneByGoogleId(profile.id);
-    if (!user) {
-      user = await this.usersService.findOrCreate(profile.id, profile);
-    }
-    return user;
   }
 }
