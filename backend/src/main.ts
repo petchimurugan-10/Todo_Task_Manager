@@ -1,17 +1,10 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ConfigService } from '@nestjs/config';
-import { Server } from 'socket.io';
-import { NestExpressApplication } from '@nestjs/platform-express';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule); // Changed to remove the generic type
-  const configService = app.get(ConfigService);
-  app.setGlobalPrefix('api');
-
-  const server = app.get('SOCKET_IO_SERVER') as Server;
-  server.listen(3001);
-
-  await app.listen(configService.get<number>('PORT', 3000));
+  const app = await NestFactory.create(AppModule);
+  app.useWebSocketAdapter(new IoAdapter(app.getHttpServer()));
+  await app.listen(3001);
 }
 bootstrap();
