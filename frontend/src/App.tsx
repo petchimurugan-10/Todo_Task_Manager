@@ -6,6 +6,8 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import NotFound from './pages/NotFound';
 import 'react-toastify/dist/ReactToastify.css';
+import './styles/index.css'; 
+import './styles/tailwind.css'; 
 
 const App: React.FC = () => {
   const queryClient = new QueryClient();
