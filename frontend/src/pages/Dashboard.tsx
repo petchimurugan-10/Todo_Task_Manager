@@ -31,7 +31,7 @@ const Dashboard: React.FC = () => {
 
   const updateMutation = useMutation({
     mutationFn: async (task: Partial<Task>) => {
-      await axios.put(`/api/tasks/${task.id}`, task, {
+      await axios.put(`/api/tasks/${task._id}`, task, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
       });
     },

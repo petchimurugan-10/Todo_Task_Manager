@@ -1,11 +1,9 @@
-import { User } from './user.types';
-
 export interface Task {
-  id: number;
+  _id: string; // Or Schema.Types.ObjectId if using Mongoose types
   title: string;
   description?: string;
-  status: 'To Do' | 'In Progress' | 'Completed';
-  priority: 'Low' | 'Medium' | 'High';
+  status: string;
+  priority: string;
   dueDate?: string;
-  user: User;
+  userId: string;
 }
