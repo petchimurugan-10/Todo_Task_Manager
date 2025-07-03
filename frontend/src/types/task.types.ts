@@ -1,9 +1,13 @@
 export interface Task {
-  _id: string; // Or Schema.Types.ObjectId if using Mongoose types
+  _id: string;
   title: string;
   description?: string;
-  status: string;
-  priority: string;
+  completed: boolean;
+  priority: 'low' | 'medium' | 'high';
   dueDate?: string;
-  userId: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
+
+// This is the type your form should use!
+export type CreateTaskDto = Omit<Task, '_id' | 'createdAt' | 'updatedAt'>;

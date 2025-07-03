@@ -1,106 +1,118 @@
-import { useState } from 'react';
-import { type Task } from '../types/task.types';
-import { toast } from 'react-toastify';
+import React, { useState } from 'react';
+
+import { type CreateTaskDto } from '../types/task.types';
 
 interface TaskFormProps {
-  task?: Task;
-  onSave: (task: Partial<Task>) => Promise<void>;
-  onCancel: () => void;
+  onSubmit: (task: CreateTaskDto) => void;
+  onCancel?: () => void;
 }
 
-const TaskForm: React.FC<TaskFormProps> = ({ task, onSave, onCancel }) => {
-  const [formData, setFormData] = useState<Partial<Task>>(
-    task || { title: '', description: '', status: 'To Do', priority: 'Medium', dueDate: '' }
-  );
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+const TaskForm: React.FC<TaskFormProps> = ({ onSubmit, onCancel }) => {
+  const [formData, setFormData] = useState<CreateTaskDto>({
+    title: '',
+    description: '',
+    priority: 'medium',
+    dueDate: '',
+    completed: false,
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    try {
-      await onSave(formData);
-      toast.success('Task saved successfully!');
-    } catch (error) {
-      toast.error('Failed to save task.');
+    if (formData.title.trim()) {
+      onSubmit(formData);  // This should now work without error
+      setFormData({
+        title: '',
+        description: '',
+        priority: 'medium',
+        dueDate: '',
+        completed: false,
+      });
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
-        <h2 className="text-xl font-bold mb-4">{task ? 'Edit Task' : 'Create Task'}</h2>
+    <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 mb-6">
+      <div className="space-y-4">
         <div>
+          <label htmlFor="title" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Task Title
+          </label>
           <input
+            id="title"
             type="text"
-            name="title"
             value={formData.title}
-            onChange={handleChange}
-            placeholder="Title"
-            className="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            placeholder="Enter task title..."
             required
-            aria-label="Task title"
           />
+        </div>
+        
+        <div>
+          <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Description
+          </label>
           <textarea
-            name="description"
+            id="description"
             value={formData.description}
-            onChange={handleChange}
-            placeholder="Description"
-            className="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Task description"
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            rows={3}
+            placeholder="Enter task description..."
           />
-          <select
-            name="status"
-            value={formData.status}
-            onChange={handleChange}
-            className="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Task status"
+        </div>
+        
+        <div className="flex gap-4">
+          <div className="flex-1">
+            <label htmlFor="priority" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Priority
+            </label>
+            <select
+              id="priority"
+              value={formData.priority}
+              onChange={(e) => setFormData({ ...formData, priority: e.target.value as 'low' | 'medium' | 'high' })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+          
+          <div className="flex-1">
+            <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Due Date
+            </label>
+            <input
+              id="dueDate"
+              type="date"
+              value={formData.dueDate}
+              onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            />
+          </div>
+        </div>
+        
+        <div className="flex gap-3">
+          <button
+            type="submit"
+            className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition-colors duration-200"
           >
-            <option value="To Do">To Do</option>
-            <option value="In Progress">In Progress</option>
-            <option value="Completed">Completed</option>
-          </select>
-          <select
-            name="priority"
-            value={formData.priority}
-            onChange={handleChange}
-            className="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Task priority"
-          >
-            <option value="Low">Low</option>
-            <option value="Medium">Medium</option>
-            <option value="High">High</option>
-          </select>
-          <input
-            type="date"
-            name="dueDate"
-            value={formData.dueDate}
-            onChange={handleChange}
-            className="w-full p-2 mb-4 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label="Task due date"
-          />
-          <div className="flex justify-end space-x-2">
+            Add Task
+          </button>
+          {onCancel && (
             <button
+              type="button"
               onClick={onCancel}
-              className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-              aria-label="Cancel task form"
+              className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50 transition-colors duration-200"
             >
               Cancel
             </button>
-            <button
-              onClick={handleSubmit}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-              aria-label="Save task"
-            >
-              Save
-            </button>
-          </div>
+          )}
         </div>
       </div>
-    </div>
+    </form>
   );
 };
 
